@@ -1,0 +1,211 @@
+---
+title: "Llamadas de emergencia relacionadas con violencia familiar"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+---
+
+
+```{r Librerias datos, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(mxmaps)
+library(scales)
+library(leaflet)
+library(ggplot2)
+```
+
+```{r Base de datos, echo=FALSE, message=FALSE, warning=FALSE}
+df_viol<- read.csv("violencia_familiar_llamadas_911.csv", 
+                    colClasses = c("character","character","character",
+                                   "character","character","character",
+                                   "numeric","numeric","numeric","numeric",
+                                   "numeric","numeric","numeric"),
+                    header = TRUE)
+```
+
+Contextualizacion
+===================================
+Column {data-width}
+-------------------------------
+
+```{r Prueba, eval=FALSE, include=FALSE}
+mtcars
+```
+
+
+***
+\n
+\n
+\n
+Ante el confinamiento debido a la COVID-19 las víctimas de violencia familiar se han encontrado en una situación de mayor vulnerabilidad, pues el encierro les obliga a convivir con su agresor. 
+
+Tal como reporta la [ONU](https://www.unwomen.org/es/news/in-focus/in-focus-gender-equality-in-covid-19-response/violence-against-women-during-covid-19) las mujeres y niñas que sufren violencia están cada vez más aisladas y lejos de quiénes podrían proveerles ayuda.   
+
+Las víctimas tienen dificultades para solicitar ayuda de manera segura. Tener un agresor en casa disminuye la posibilidad de denunciar pues, tal como Oleksandra, víctima de violencia familiar, menciona ["genera miedo pedir ayuda, sabiendo que él puede espiar las llamadas". ](https://www.un.org/es/coronavirus/articles/un-supporting-trapped-domestic-violence-victims-during-covid-19-pandemic) 
+
+Si bien, al inicio del confinamiento en marzo de 2020 hubo un incremento de llamadas de emergencia por violencia [familiar, ](https://datos.nexos.com.mx/?p=1416) [contra las mujeres ](https://www.infobae.com/america/mexico/2020/05/15/la-controvertida-aseveracion-de-lopez-obrador-el-90-de-las-llamadas-por-violencia-contra-las-mujeres-son-falsas/) [e infantil](https://www.infobae.com/america/mexico/2020/07/22/confinados-con-su-agresor-por-que-el-covid-19-recrudecio-la-violencia-familiar-en-mexico/), en abril se registró una baja significativa. En las próximas pestañas pueden comprobar que, con el paso de los meses, el número de llamadas al 911 relacionadas con incidentes de violencia familiar continuó disminuyendo a nivel nacional. 
+
+Se han propuesto medidas que permitan a las víctimas solicitar protección de manera discreta, como la ideada por la [Canadian Women's Foundation. ](https://canadianwomen.org/signal-for-help/) 
+Proponen esta señal silenciosa que una víctima puede mostrar en videollamadas para solicitar ayuda: 
+
+```{r echo=FALSE, out.height=400, eval = TRUE}
+knitr::include_graphics("https://canadianwomen.org/wp-content/uploads/2020/04/Banner_EN_CWF-1024x467.png")
+```
+
+
+Sin embargo, se requieren otros recursos, servicios y programas, ya que no todas las personas tienen acceso a dispositivos celulares o computadoras y, por ende, tampoco a videollamadas. 
+
+
+
+
+Llamadas 2019 vs 2020 {data-orientation=rows}
+==============================
+
+
+----------------------------
+
+### ¿Disminución de violencia familiar? 
+```{r Llamadas por anio, echo= FALSE}
+a<-seq(45000,75000,by=5000)
+
+df_viol %>% 
+mutate_at(vars(fecha), as.Date, format="%Y-%m-%d")%>%
+filter(cve_entidad==33) %>% 
+  ggplot(aes(x=cve_mes, y=vio_fam_911_mensual, group=año,label = vio_fam_911_mensual))+
+  geom_line(aes(color=año), size=1)+
+  geom_label(aes(color=año),size=2, show.legend = F)+
+  scale_color_manual(values=c("deeppink3", "mediumorchid"))+
+  labs(x="",
+       y="",
+       title ="Llamadas de emergencia relacionadas con \n incidentes de violencia familiar",
+       subtitle ="Nacional 2019 - 2020")+
+  theme_light() +
+  theme(plot.title=element_text(size=18, face="bold", colour="mediumorchid4",
+                                margin=margin(20,0,5,0)),
+        plot.subtitle=element_text(size=15, face="bold", color="black",
+                                   margin=margin(0,0,20,0)),
+        plot.caption =element_text(size=6, color="black"),
+        axis.text.x=element_text(size= 5),
+        axis.text.y = element_text(size = 7),
+        legend.text = element_text(size = 7),
+        legend.title = element_blank()) +
+  scale_x_discrete(labels=c("A"="Enero","B"="Febrero","C"="Marzo",
+                            "D"="Abril","E"="Mayo","F"="Junio",
+                            "G"="Julio","H"="Agosto","I"="Septiembre",
+                            "J"="Octubre","K"="Noviembre","L"="Diciembre"))+
+  scale_y_continuous(breaks = a,limits = c(45000,75000))
+
+```
+
+-----------
+
+### Sobre el gráfico...
+
+Presentado por primera vez en: [nexos.](https://datos.nexos.com.mx/?p=1416). \n
+Actualizado por: Emma Yolotzin Botello Estrada . \n
+Originalmente elaborado por: Marcela Dolores Guerra Osorno | @osornomarcela          \n
+Cifras: [Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública](https://www.gob.mx/sesnsp/acciones-y-programas/incidencia-delictiva-del-fuero-comun-nueva-metodologia?state=published). \n
+Datos y código disponibles en: [github](https://github.com/MarcelaGuerra/violencia_familiar_covidmx)
+
+
+```{r df_2019, echo=FALSE, message=FALSE, warning=FALSE}
+df_2019 <- df_viol %>% filter(cve_entidad !=33, año == 2019) %>% 
+    group_by(cve_entidad, entidad) %>% 
+summarise(
+    mean_calls_2019 = mean(vio_fam_911_mensual) 
+  ) %>% 
+  mutate(cve_entidad = sprintf("%02d",as.numeric(cve_entidad))) %>% 
+  arrange(cve_entidad) %>% 
+  select(region = cve_entidad, value = mean_calls_2019, state_name = entidad)   
+
+```
+
+Violencia por entidad {data-orientation=rows}
+========================
+
+Column {data-width=100}
+--------------------------
+
+
+### Sobre los gráficos...
+```{r eval=FALSE, include=FALSE}
+mtcars
+```
+
+**Calculo de porcentajes per capita**
+Se obtuvo el promedio del número de llamadas por entidad para cada año. Se dividió el promedio entre la población total de cada entidad y se multiplicó el resultado por 100 para facilitar la interpretación.
+
+
+Cifras: [Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública](https://www.gob.mx/sesnsp/acciones-y-programas/incidencia-delictiva-del-fuero-comun-nueva-metodologia?state=published).\n
+Elaborado por: Emma Y. Botello Estrada. \n
+Datos y código disponibles en: [github](https://github.com/emmaboes/visualizacion_viol_911)
+
+### Porcentaje per capita del promedio de llamadas en 2019 
+
+Visualización estatal
+
+```{r Mapa 2019, echo=FALSE, message=FALSE}
+
+df_pop_2019 <- df_mxstate_2020 %>% 
+  select(region, pop) %>% 
+  inner_join(df_2019) %>%  
+  mutate(value = (value/pop)*100) 
+
+pal <- colorNumeric("Blues", domain = df_pop_2019$value)
+
+mxstate_leaflet(df_pop_2019,
+                pal,
+                ~ pal(value),
+                ~ sprintf("State: %s<br/> Porcentaje per capita: %s",
+                          state_name, comma(value))) %>%
+  addLegend(position = "bottomright", 
+            pal = pal, 
+            values = df_pop_2019$value,
+            title = "Porcentaje <br>per capita",
+            ) %>%
+  addProviderTiles("CartoDB.Positron")
+```
+
+
+```{r df_2020, echo=FALSE, message=FALSE, warning=FALSE}
+df_2020 <- df_viol %>% filter(cve_entidad !=33, año == 2020) %>% 
+    group_by(cve_entidad, entidad) %>% 
+summarise(
+    mean_calls_2019 = mean(vio_fam_911_mensual) 
+  ) %>% 
+  mutate(cve_entidad = sprintf("%02d",as.numeric(cve_entidad))) %>% 
+  arrange(cve_entidad)%>% 
+  select(region = cve_entidad, value = mean_calls_2019, state_name = entidad)
+```
+
+-----------------------------------
+
+
+
+
+### Porcentaje per capita del promedio de llamadas en 2020 
+
+  Visualización estatal (con datos recabados hasta septiembre)
+  
+```{r Mapa 2020, echo=FALSE, message=FALSE}
+
+df_pop_2020 <- df_mxstate_2020 %>% 
+  select(region, pop) %>% 
+  inner_join(df_2020) %>%  
+  mutate(value = (value/pop)* 100) 
+
+pal <- colorNumeric("Blues", domain = df_pop_2020$value)
+mxstate_leaflet(df_pop_2020,
+                pal,
+                ~ pal(value),
+                ~ sprintf("State: %s<br/> Porcentaje per capita: %s",
+                          state_name, comma(value))) %>%
+  addLegend(position = "bottomright", 
+            pal = pal, 
+            values = df_pop_2020$value,
+            title = "Porcentaje<br>per capita",
+            ) %>%
+  addProviderTiles("CartoDB.Positron")
+
+```
+
